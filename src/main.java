@@ -21,14 +21,18 @@ public class main {
     static PrintWriter updater;
     static PrintWriter matchRecorder;
     static int startElo;
+    static ArrayList<Match> newMatches;
+    static BufferedReader matchReader;
 
     public static void main(String[] args) throws FileNotFoundException, IOException {
 
         //Set initial values
         matchHistory = new ArrayList<Match>();
+        newMatches = new ArrayList<Match>();
         startElo = 50;
         matchRecorder = new PrintWriter(new FileWriter("matches.txt", true));
         filereader = new BufferedReader(new FileReader("players.txt"));
+        matchReader = new BufferedReader(new FileReader("input.txt"));
 
         kfactor = 10;
         ratingDisparity = 100;
@@ -68,9 +72,14 @@ public class main {
                         updater.close();
                         matchRecorder.close();
                         System.exit(0);
+                        break;
                     case "-clear":
                         matchHistory.clear();
                         players.clear();
+                        break;
+                    case "-read":
+                     
+                        break;
                 }
             } else if (reader[1].charAt(0) == '-') {
                 switch (reader[1]) {
@@ -94,9 +103,15 @@ public class main {
                             ratingDisparity = Integer.parseInt(reader[1]);
                         }
                         break;
+                    case "-read":
+                        matchReader = new BufferedReader(new FileReader(reader[0]));
                 }
             }
         }
+    }
+    
+    static void read(BufferedReader in){
+        
     }
 
     static void print() {
