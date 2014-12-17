@@ -9,6 +9,8 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.Scanner;
 import java.util.StringTokenizer;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class main {
 
@@ -22,7 +24,8 @@ public class main {
     static PrintWriter matchRecorder;
     static int startElo;
     static ArrayList<Match> newMatches;
-    static BufferedReader matchReader;
+    static BufferedReader commandReader;
+    static ArrayList<String> commands;
 
     public static void main(String[] args) throws FileNotFoundException, IOException {
 
@@ -32,10 +35,11 @@ public class main {
         startElo = 50;
         matchRecorder = new PrintWriter(new FileWriter("matches.txt", true));
         filereader = new BufferedReader(new FileReader("players.txt"));
-        matchReader = new BufferedReader(new FileReader("input.txt"));
+        commandReader = new BufferedReader(new FileReader("input.txt"));
+        commands = new ArrayList<String>();
 
-        kfactor = 10;
-        ratingDisparity = 100;
+        kfactor = 32;
+        ratingDisparity = 400;
         players = new ArrayList<Player>();
         in = new Scanner(System.in);
         String buffer;
@@ -49,7 +53,7 @@ public class main {
             buffer = filereader.readLine();
         }
         updater = new PrintWriter(new FileWriter("players.txt"));
-        
+
         //WARNING: THERE IS NO ERROR HANDLING SYSTEM...
         //BAD THINGS WILL HAPPEN IF THE INPUT IS NOT ENTERED CORRECTLY
         System.out.println("PLEASE DO NOT ENTER IMPROPER INPUT");
@@ -57,7 +61,12 @@ public class main {
         //Commands
         while (true) {
             System.out.println("Please enter the command...");
-            buffer = in.nextLine();
+            if (commands.size() > 0) {
+                buffer = commands.get(0);
+                commands.remove(0);
+            } else {
+                buffer = in.nextLine();
+            }
             String[] reader = buffer.split(" ");
             if (reader[0].charAt(0) == '-') {
                 switch (reader[0]) {
@@ -78,7 +87,7 @@ public class main {
                         players.clear();
                         break;
                     case "-read":
-                     
+                        read();
                         break;
                 }
             } else if (reader[1].charAt(0) == '-') {
@@ -104,14 +113,32 @@ public class main {
                         }
                         break;
                     case "-read":
-                        matchReader = new BufferedReader(new FileReader(reader[0]));
+                        commandReader = new BufferedReader(new FileReader(reader[0]));
                 }
             }
         }
     }
-    
-    static void read(BufferedReader in){
-        
+
+    static void read() {
+        try {
+            String buffer = commandReader.readLine();
+            while (buffer != null) {
+                commands.add(buffer);
+                buffer = commandReader.readLine();
+            }
+        } catch (IOException ex) {
+            Logger.getLogger(main.class.getName()).log(Level.SEVERE, null, ex);
+            System.out.println("Reading failure");
+        } finally {
+            try {
+                PrintWriter clearer = new PrintWriter(new FileWriter("input.txt"));
+                clearer.println("");
+                clearer.close();
+            } catch (IOException ex) {
+                Logger.getLogger(main.class.getName()).log(Level.SEVERE, null, ex);
+                System.out.println("Unable to clear input file");
+            }
+        }
     }
 
     static void print() {
@@ -181,7 +208,7 @@ public class main {
     static int eloCalculator(int x, int y) {
         int change;
         int difference = Math.abs(x - y);
-        change = (int) (kfactor * (1 - (1 / (Math.pow(10, (difference * -1 / ratingDisparity) + 1)))));
+        change = (int) Math.round(kfactor * (1 - (1 / (Math.pow(10, (difference * -1 / ratingDisparity) + 1)))));
         return change;
     }
 
