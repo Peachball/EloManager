@@ -208,7 +208,7 @@ public class main {
     static int eloCalculator(int x, int y) {
         int change;
         int difference = Math.abs(x - y);
-        change = (int) Math.round(kfactor * (1 - (1 / (Math.pow(10, (difference * -1 / ratingDisparity) + 1)))));
+        change = (int) Math.round(kfactor * (1 - (1 / (Math.pow(10, (difference * -1 / ratingDisparity)) + 1))));
         return change;
     }
 
