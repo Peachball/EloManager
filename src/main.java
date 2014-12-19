@@ -1,4 +1,5 @@
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
@@ -34,7 +35,7 @@ public class main {
         newMatches = new ArrayList<Match>();
         startElo = 50;
         matchRecorder = new PrintWriter(new FileWriter("matches.txt", true));
-        filereader = new BufferedReader(new FileReader("players.txt"));
+        filereader = new BufferedReader(new FileReader("stats.txt"));
         commandReader = new BufferedReader(new FileReader("input.txt"));
         commands = new ArrayList<String>();
 
@@ -52,7 +53,6 @@ public class main {
             players.add(new Player(com.nextToken(), Integer.parseInt(com.nextToken())));
             buffer = filereader.readLine();
         }
-        updater = new PrintWriter(new FileWriter("players.txt"));
 
         //WARNING: THERE IS NO ERROR HANDLING SYSTEM...
         //BAD THINGS WILL HAPPEN IF THE INPUT IS NOT ENTERED CORRECTLY
@@ -60,24 +60,31 @@ public class main {
 
         //Commands
         while (true) {
-            System.out.println("Please enter the command...");
             if (commands.size() > 0) {
                 buffer = commands.get(0);
                 commands.remove(0);
             } else {
+                System.out.println("Please enter the command...");
                 buffer = in.nextLine();
             }
             String[] reader = buffer.split(" ");
-            if (reader[0].charAt(0) == '-') {
+            if (reader.length == 0) {
+                continue;
+            }
+            updater = new PrintWriter(new FileWriter("stats.txt"));
+            if (reader.length > 0 && reader[0].charAt(0) == '-') {
                 switch (reader[0]) {
                     case "-h":
                         help();
                         break;
                     case "-print":
-                        print();
+                        printFile();
+                        break;
+                    case "-ps":
+                        printScreen();
                         break;
                     case "-end":
-                        print();
+                        printFile();
                         updater.close();
                         matchRecorder.close();
                         System.exit(0);
@@ -86,14 +93,24 @@ public class main {
                         matchHistory.clear();
                         players.clear();
                         break;
+                    case "-clearhistory":
+                        PrintWriter clearer = new PrintWriter("matches.txt");
+                        clearer.println();
+                        clearer.close();
                     case "-read":
                         read();
                         break;
                 }
-            } else if (reader[1].charAt(0) == '-') {
+            } else if (reader.length > 1 && reader[1].charAt(0) == '-') {
                 switch (reader[1]) {
                     case "-beat":
-                        updater(reader[0], reader[2]);
+                        int success = updater(reader[0], reader[2]);
+                        if (success == -1) {
+                            System.out.println("Failure with " + reader[0] + " and " + reader[2]);
+                        }
+                        break;
+                    case "-bs":
+                        System.out.println(updater(reader[0], reader[2]));
                         break;
                     case "-add":
                         if (reader.length == 3) {
@@ -116,6 +133,7 @@ public class main {
                         commandReader = new BufferedReader(new FileReader(reader[0]));
                 }
             }
+            updater.close();
         }
     }
 
@@ -141,7 +159,7 @@ public class main {
         }
     }
 
-    static void print() {
+    static void printFile() {
         Collections.sort(players, new eloScoreSorter());
         for (int counter = 0; counter < players.size(); counter++) {
             updater.println(players.get(counter).name + " " + players.get(counter).score);
@@ -152,13 +170,29 @@ public class main {
         for (int counter = 0; counter < matchHistory.size(); counter++) {
             matchRecorder.println(matchHistory.get(counter).winner.name + " -beat " + matchHistory.get(counter).loser.name);
         }
+
+    }
+
+    static void printScreen() {
+        Collections.sort(players, new eloScoreSorter());
+        for (int counter = 0; counter < players.size(); counter++) {
+            System.out.println(players.get(counter).name + " " + players.get(counter).score);
+        }
     }
 
     //First guy always is assumed to beat second guy
-    static void updater(String name1, String name2) {
+    static int updater(String name1, String name2) {
         Collections.sort(players, new nameSorter());
         int position1 = Collections.binarySearch(players, new Player(name1, 0), new nameSorter());
         int position2 = Collections.binarySearch(players, new Player(name2, 0), new nameSorter());
+        if (position1 == -1) {
+            System.out.println("Error with " + name1);
+            return -1;
+        }
+        if (position2 == -1) {
+            System.out.println("Error with " + name2);
+            return -1;
+        }
         int elo1 = players.get(position1).score;
         int elo2 = players.get(position2).score;
         int change = eloCalculator(elo1, elo2);
@@ -171,6 +205,7 @@ public class main {
         players.set(position1, new Player(name1, elo1));
         players.set(position2, new Player(name2, elo2));
         matchHistory.add(new Match(new Player(name1, elo1), new Player(name2, elo2)));
+        return change;
     }
 
     static boolean isInteger(String str) {
@@ -207,7 +242,7 @@ public class main {
     //Assuming that x won against y...
     static int eloCalculator(int x, int y) {
         int change;
-        int difference = Math.abs(x - y);
+        int difference = x - y;
         change = (int) Math.round(kfactor * (1 - (1 / (Math.pow(10, (difference * -1 / ratingDisparity)) + 1))));
         return change;
     }
@@ -226,7 +261,8 @@ public class main {
                 + "-setK will set the kfactor\n"
                 + "-setD will set the disparity\n"
                 + "-end will end the program\n"
-                + "-clear will clear all data\n");
+                + "-clear will clear all data\n"
+                + "-read will read input from the input file");
     }
 }
 // E.g. max -beat joe
